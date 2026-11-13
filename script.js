@@ -4,6 +4,10 @@ const addRowButton = document.querySelector('#add-row');
 const discountInput = document.querySelector('#discount');
 const vatInput = document.querySelector('#vat');
 const currencySelect = document.querySelector('#currency');
+const commentInput = document.querySelector('#comment');
+const printButton = document.querySelector('#print-estimate');
+const estimateNumber = document.querySelector('#estimate-number');
+const estimateDate = document.querySelector('#estimate-date');
 
 const subtotalOutput = document.querySelector('#subtotal');
 const discountRow = document.querySelector('#discount-row');
@@ -22,6 +26,21 @@ function numberOrZero(value) {
 function formatMoney(value) {
   const safeValue = Number.isFinite(value) ? Math.round(value) : 0;
   return `${safeValue.toLocaleString('ru-RU')} ${currencySelect.value}`;
+}
+
+function setDocumentDetails() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  estimateNumber.textContent = `${year}${month}${day}-01`;
+  estimateDate.textContent = today.toLocaleDateString('ru-RU');
+}
+
+function resizeComment() {
+  commentInput.style.height = 'auto';
+  commentInput.style.height = `${Math.max(104, commentInput.scrollHeight)}px`;
 }
 
 function calculate() {
@@ -88,5 +107,12 @@ itemsBody.addEventListener('click', (event) => {
 discountInput.addEventListener('input', calculate);
 vatInput.addEventListener('input', calculate);
 currencySelect.addEventListener('change', calculate);
+commentInput.addEventListener('input', resizeComment);
+printButton.addEventListener('click', () => {
+  calculate();
+  resizeComment();
+  window.print();
+});
 
+setDocumentDetails();
 addRow();

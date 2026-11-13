@@ -17,8 +17,14 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+}
+
+.print-header,
+.print-signature {
+  display: none;
 }
 
 .page {
@@ -96,6 +102,18 @@ h1 {
   background: #dbeafe;
 }
 
+.button-primary {
+  padding: 0 22px;
+  border: 1px solid #1d4ed8;
+  color: #ffffff;
+  background: #2563eb;
+  font-weight: 700;
+}
+
+.button-primary:hover {
+  background: #1d4ed8;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -141,7 +159,8 @@ td:last-child {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 44px;
   padding: 9px 11px;
@@ -153,6 +172,7 @@ select {
 
 input:focus,
 select:focus,
+textarea:focus,
 button:focus-visible {
   outline: 3px solid rgb(37 99 235 / 25%);
   outline-offset: 2px;
@@ -225,6 +245,35 @@ button:focus-visible {
   color: #0f172a;
   font-size: 20px;
   font-weight: 700;
+}
+
+.comment-block {
+  margin-top: 28px;
+}
+
+.comment-block label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 700;
+}
+
+.comment-block textarea {
+  display: block;
+  min-height: 104px;
+  resize: vertical;
+}
+
+.document-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.document-actions p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
 }
 
 .visually-hidden {
@@ -305,5 +354,198 @@ button:focus-visible {
 
   .summary-total {
     font-size: 18px;
+  }
+
+  .document-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm;
+}
+
+@media print {
+  :root {
+    color: #000000;
+    background: #ffffff;
+  }
+
+  body {
+    min-width: 0;
+    background: #ffffff;
+    font-size: 10pt;
+  }
+
+  .page {
+    width: auto;
+    margin: 0;
+    padding: 0;
+  }
+
+  .page-header,
+  .section-heading,
+  .adjustments,
+  .document-actions,
+  .row-action,
+  thead th:last-child,
+  button {
+    display: none !important;
+  }
+
+  .card {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .print-header {
+    display: block;
+    margin-bottom: 8mm;
+  }
+
+  .print-header h1 {
+    margin: 0 0 6mm;
+    font-size: 18pt;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .print-requisites {
+    display: grid;
+    gap: 2mm;
+  }
+
+  .print-requisites p {
+    margin: 0;
+  }
+
+  .table-wrap {
+    overflow: visible;
+  }
+
+  table {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    page-break-inside: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tbody {
+    display: table-row-group;
+  }
+
+  tr,
+  .item-row {
+    display: table-row;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    page-break-inside: avoid;
+  }
+
+  th,
+  td,
+  .item-row td {
+    display: table-cell;
+    width: auto !important;
+    padding: 2.5mm 2mm;
+    border: 1px solid #000000;
+    color: #000000;
+    vertical-align: top;
+  }
+
+  th {
+    font-size: 8.5pt;
+  }
+
+  th:nth-child(1) {
+    width: 46% !important;
+  }
+
+  th:nth-child(2) {
+    width: 16% !important;
+  }
+
+  th:nth-child(3),
+  th:nth-child(4) {
+    width: 19% !important;
+  }
+
+  .item-row td::before {
+    display: none;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    outline: 0;
+    color: #000000;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: transparent;
+  }
+
+  .item-total {
+    font-size: inherit;
+    font-weight: 400;
+  }
+
+  .summary {
+    width: 85mm;
+    margin: 6mm 0 0 auto;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    page-break-inside: avoid;
+  }
+
+  .summary-row {
+    padding: 1.5mm 0;
+  }
+
+  .summary-total {
+    margin-top: 1mm;
+    padding-top: 2.5mm;
+    border-top: 1px solid #000000;
+    font-size: 12pt;
+  }
+
+  .comment-block {
+    margin-top: 7mm;
+    page-break-inside: avoid;
+  }
+
+  .comment-block label {
+    margin-bottom: 2mm;
+  }
+
+  .comment-block textarea {
+    min-height: 16mm;
+    overflow: hidden;
+    resize: none;
+    white-space: pre-wrap;
+  }
+
+  .print-signature {
+    display: block;
+    margin: 10mm 0 0;
+    page-break-inside: avoid;
   }
 }

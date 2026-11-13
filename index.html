@@ -15,6 +15,14 @@
     </header>
 
     <section class="card" aria-labelledby="items-heading">
+      <header class="print-header" aria-hidden="true">
+        <h1>Смета № <span id="estimate-number"></span> от <span id="estimate-date"></span></h1>
+        <div class="print-requisites">
+          <p><strong>Исполнитель:</strong> ______________________________________________</p>
+          <p><strong>Заказчик:</strong> _________________________________________________</p>
+        </div>
+      </header>
+
       <div class="section-heading">
         <h2 id="items-heading">Позиции</h2>
         <button class="button button-secondary" id="add-row" type="button">+ Добавить позицию</button>
@@ -77,6 +85,18 @@
           <dd id="grand-total">0 ₸</dd>
         </div>
       </dl>
+
+      <div class="comment-block">
+        <label for="comment">Комментарий</label>
+        <textarea id="comment" rows="4" placeholder="Например: срок выполнения — 5 рабочих дней, предоплата — 50 %"></textarea>
+      </div>
+
+      <div class="document-actions">
+        <button class="button button-primary" id="print-estimate" type="button">Сохранить PDF</button>
+        <p>В окне печати выберите «Сохранить как PDF».</p>
+      </div>
+
+      <p class="print-signature" aria-hidden="true">Подпись ____________________</p>
     </section>
   </main>
 
