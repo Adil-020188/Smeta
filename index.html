@@ -93,8 +93,17 @@
 
       <div class="document-actions">
         <button class="button button-primary" id="print-estimate" type="button">Сохранить PDF</button>
-        <p>В окне печати выберите «Сохранить как PDF».</p>
+        <button class="button button-secondary" id="copy-whatsapp" type="button">Скопировать для WhatsApp</button>
+        <button class="button button-secondary button-danger" id="new-estimate" type="button">Новая смета</button>
+        <span class="copy-status" id="copy-status" role="status" aria-live="polite"></span>
       </div>
+
+      <div class="manual-copy" id="manual-copy" hidden>
+        <label for="manual-copy-text">Не удалось скопировать автоматически. Скопируйте текст вручную:</label>
+        <textarea id="manual-copy-text" rows="8" readonly></textarea>
+      </div>
+
+      <p class="pdf-hint">В окне печати выберите «Сохранить как PDF».</p>
 
       <p class="print-signature" aria-hidden="true">Подпись ____________________</p>
     </section>

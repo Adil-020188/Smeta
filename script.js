@@ -6,8 +6,16 @@ const vatInput = document.querySelector('#vat');
 const currencySelect = document.querySelector('#currency');
 const commentInput = document.querySelector('#comment');
 const printButton = document.querySelector('#print-estimate');
+const copyButton = document.querySelector('#copy-whatsapp');
+const newEstimateButton = document.querySelector('#new-estimate');
+const copyStatus = document.querySelector('#copy-status');
+const manualCopy = document.querySelector('#manual-copy');
+const manualCopyText = document.querySelector('#manual-copy-text');
 const estimateNumber = document.querySelector('#estimate-number');
 const estimateDate = document.querySelector('#estimate-date');
+
+const storageKey = 'estimate-draft-v1';
+let copyStatusTimer;
 
 const subtotalOutput = document.querySelector('#subtotal');
 const discountRow = document.querySelector('#discount-row');
@@ -28,14 +36,21 @@ function formatMoney(value) {
   return `${safeValue.toLocaleString('ru-RU')} ${currencySelect.value}`;
 }
 
-function setDocumentDetails() {
+function getTodayDetails(sequence = 1) {
   const today = new Date();
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
 
-  estimateNumber.textContent = `${year}${month}${day}-01`;
-  estimateDate.textContent = today.toLocaleDateString('ru-RU');
+  return {
+    number: `${year}${month}${day}-${String(sequence).padStart(2, '0')}`,
+    date: today.toLocaleDateString('ru-RU')
+  };
+}
+
+function setDocumentDetails(details = getTodayDetails()) {
+  estimateNumber.textContent = details.number;
+  estimateDate.textContent = details.date;
 }
 
 function resizeComment() {
@@ -75,7 +90,56 @@ function calculate() {
   vatRow.hidden = vatAmount === 0;
 }
 
-function addRow({ name = '', quantity = 1, price = 0 } = {}) {
+function getDraft() {
+  return {
+    number: estimateNumber.textContent,
+    date: estimateDate.textContent,
+    items: [...itemsBody.querySelectorAll('.item-row')].map((row) => ({
+      name: row.querySelector('.item-name').value,
+      quantity: row.querySelector('.item-quantity').value,
+      price: row.querySelector('.item-price').value
+    })),
+    discount: discountInput.value,
+    vat: vatInput.value,
+    currency: currencySelect.value,
+    comment: commentInput.value
+  };
+}
+
+function saveDraft() {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(getDraft()));
+  } catch (error) {
+    // Расчёты продолжают работать, даже если хранилище браузера недоступно.
+  }
+}
+
+function loadDraft() {
+  try {
+    const savedDraft = JSON.parse(localStorage.getItem(storageKey));
+    if (!savedDraft || !Array.isArray(savedDraft.items)) return false;
+
+    setDocumentDetails({
+      number: savedDraft.number || getTodayDetails().number,
+      date: savedDraft.date || getTodayDetails().date
+    });
+    discountInput.value = savedDraft.discount ?? 0;
+    vatInput.value = savedDraft.vat ?? 0;
+    if ([...currencySelect.options].some((option) => option.value === savedDraft.currency)) {
+      currencySelect.value = savedDraft.currency;
+    }
+    commentInput.value = savedDraft.comment ?? '';
+    savedDraft.items.forEach((item) => addRow(item, false));
+    if (!savedDraft.items.length) addRow({}, false);
+    calculate();
+    resizeComment();
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function addRow({ name = '', quantity = 1, price = 0 } = {}, shouldSave = true) {
   const fragment = rowTemplate.content.cloneNode(true);
   const row = fragment.querySelector('.item-row');
 
@@ -84,6 +148,7 @@ function addRow({ name = '', quantity = 1, price = 0 } = {}) {
   row.querySelector('.item-price').value = price;
   itemsBody.append(fragment);
   calculate();
+  if (shouldSave) saveDraft();
 
   return row;
 }
@@ -94,6 +159,7 @@ addRowButton.addEventListener('click', () => {
 });
 
 itemsBody.addEventListener('input', calculate);
+itemsBody.addEventListener('input', saveDraft);
 
 itemsBody.addEventListener('click', (event) => {
   const removeButton = event.target.closest('.remove-row');
@@ -102,17 +168,108 @@ itemsBody.addEventListener('click', (event) => {
   removeButton.closest('.item-row').remove();
   if (!itemsBody.querySelector('.item-row')) addRow();
   calculate();
+  saveDraft();
 });
 
-discountInput.addEventListener('input', calculate);
-vatInput.addEventListener('input', calculate);
-currencySelect.addEventListener('change', calculate);
-commentInput.addEventListener('input', resizeComment);
+[discountInput, vatInput].forEach((input) => {
+  input.addEventListener('input', calculate);
+  input.addEventListener('input', saveDraft);
+});
+currencySelect.addEventListener('change', () => {
+  calculate();
+  saveDraft();
+});
+commentInput.addEventListener('input', () => {
+  resizeComment();
+  saveDraft();
+});
 printButton.addEventListener('click', () => {
   calculate();
   resizeComment();
   window.print();
 });
 
-setDocumentDetails();
-addRow();
+function getNextEstimateDetails() {
+  const currentNumber = estimateNumber.textContent;
+  const match = currentNumber.match(/^(.*?)(\d+)$/);
+  if (!match) return getTodayDetails(2);
+
+  const nextSequence = Number.parseInt(match[2], 10) + 1;
+  return {
+    number: `${match[1]}${String(nextSequence).padStart(match[2].length, '0')}`,
+    date: getTodayDetails().date
+  };
+}
+
+function resetEstimate() {
+  if (!window.confirm('Очистить текущую смету и создать новую?')) return;
+
+  const nextDetails = getNextEstimateDetails();
+  itemsBody.replaceChildren();
+  discountInput.value = 0;
+  vatInput.value = 0;
+  currencySelect.selectedIndex = 0;
+  commentInput.value = '';
+  manualCopy.hidden = true;
+  copyStatus.textContent = '';
+  setDocumentDetails(nextDetails);
+  addRow({}, false);
+  calculate();
+  resizeComment();
+  saveDraft();
+  itemsBody.querySelector('.item-name').focus();
+}
+
+function getEstimateText() {
+  calculate();
+  const lines = [`Смета № ${estimateNumber.textContent} от ${estimateDate.textContent}`, ''];
+
+  itemsBody.querySelectorAll('.item-row').forEach((row) => {
+    const name = row.querySelector('.item-name').value.trim() || 'Без наименования';
+    const quantity = numberOrZero(row.querySelector('.item-quantity').value);
+    const price = numberOrZero(row.querySelector('.item-price').value);
+    lines.push(`• ${name} — ${quantity.toLocaleString('ru-RU')} шт × ${formatMoney(price)} = ${formatMoney(quantity * price)}`);
+  });
+
+  const discountPercent = numberOrZero(discountInput.value);
+  const vatPercent = numberOrZero(vatInput.value);
+  if (discountPercent > 0) lines.push(`Скидка ${discountPercent.toLocaleString('ru-RU')}%: −${discountOutput.textContent}`);
+  if (vatPercent > 0) lines.push(`НДС ${vatPercent.toLocaleString('ru-RU')}%: ${vatOutput.textContent}`);
+  lines.push('', `Итого к оплате: ${grandTotalOutput.textContent}`);
+
+  return lines.join('\n');
+}
+
+function showCopiedStatus() {
+  window.clearTimeout(copyStatusTimer);
+  copyStatus.textContent = 'Скопировано ✓';
+  copyStatusTimer = window.setTimeout(() => {
+    copyStatus.textContent = '';
+  }, 2000);
+}
+
+async function copyForWhatsApp() {
+  const text = getEstimateText();
+  manualCopy.hidden = true;
+
+  try {
+    if (!navigator.clipboard || !window.isSecureContext) throw new Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(text);
+    showCopiedStatus();
+  } catch (error) {
+    copyStatus.textContent = '';
+    manualCopyText.value = text;
+    manualCopy.hidden = false;
+    manualCopyText.focus();
+    manualCopyText.select();
+  }
+}
+
+copyButton.addEventListener('click', copyForWhatsApp);
+newEstimateButton.addEventListener('click', resetEstimate);
+
+if (!loadDraft()) {
+  setDocumentDetails();
+  addRow({}, false);
+  saveDraft();
+}

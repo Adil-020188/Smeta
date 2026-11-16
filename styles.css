@@ -266,12 +266,49 @@ button:focus-visible {
 .document-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
   margin-top: 20px;
 }
 
-.document-actions p {
-  margin: 0;
+.copy-status {
+  min-height: 24px;
+  color: #15803d;
+  font-weight: 700;
+}
+
+.button-danger {
+  border-color: #dc2626;
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.button-danger:hover {
+  background: #fee2e2;
+}
+
+.manual-copy {
+  margin-top: 20px;
+}
+
+.manual-copy[hidden] {
+  display: none;
+}
+
+.manual-copy label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 700;
+}
+
+.manual-copy textarea {
+  display: block;
+  min-height: 180px;
+  resize: vertical;
+}
+
+.pdf-hint {
+  margin: 10px 0 0;
   color: #64748b;
   font-size: 14px;
 }
@@ -389,6 +426,8 @@ button:focus-visible {
   .section-heading,
   .adjustments,
   .document-actions,
+  .manual-copy,
+  .pdf-hint,
   .row-action,
   thead th:last-child,
   button {
