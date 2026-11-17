@@ -15,8 +15,12 @@ const estimateNumber = document.querySelector('#estimate-number');
 const estimateDate = document.querySelector('#estimate-date');
 const estimateTitleInput = document.querySelector('#estimate-title');
 const customerInput = document.querySelector('#customer-name');
+const companyInput = document.querySelector('#company-name');
+const contractorInput = document.querySelector('#contractor-name');
 const printEstimateTitle = document.querySelector('#print-estimate-title');
 const printCustomer = document.querySelector('#print-customer');
+const printCompany = document.querySelector('#print-company');
+const printContractor = document.querySelector('#print-contractor');
 const historyList = document.querySelector('#history-list');
 const historyEmpty = document.querySelector('#history-empty');
 const clearHistoryButton = document.querySelector('#clear-history');
@@ -39,10 +43,17 @@ const translations = {
     pageTitle: 'Смета за 5 минут',
     intro: 'Составьте аккуратную смету, рассчитайте итог и отправьте клиенту — всё в одном окне.',
     autosave: 'Черновик сохраняется автоматически',
+    company: 'Компания',
+    companyName: 'Название компании',
+    companyPlaceholder: 'Например, ТОО «Компания»',
+    estimateNumber: 'Номер сметы',
+    date: 'Дата',
     estimateName: 'Название сметы',
     estimateNamePlaceholder: 'Например, ремонт офиса',
     customerData: 'Данные заказчика',
     customerPlaceholder: 'Имя или название компании',
+    contractorData: 'Данные исполнителя',
+    contractorPlaceholder: 'Имя или название исполнителя',
     estimate: 'Смета',
     from: 'от',
     contractor: 'Исполнитель:',
@@ -105,10 +116,17 @@ const translations = {
     pageTitle: '5 минутта смета',
     intro: 'Ұқыпты смета жасаңыз, қорытындыны есептеп, клиентке жіберіңіз — бәрі бір терезеде.',
     autosave: 'Нобай автоматты түрде сақталады',
+    company: 'Компания',
+    companyName: 'Компания атауы',
+    companyPlaceholder: 'Мысалы, «Компания» ЖШС',
+    estimateNumber: 'Смета нөмірі',
+    date: 'Күні',
     estimateName: 'Смета атауы',
     estimateNamePlaceholder: 'Мысалы, кеңсені жөндеу',
     customerData: 'Тапсырыс беруші туралы мәлімет',
     customerPlaceholder: 'Аты немесе компания атауы',
+    contractorData: 'Орындаушы туралы мәлімет',
+    contractorPlaceholder: 'Орындаушының аты немесе компания атауы',
     estimate: 'Смета',
     from: 'күні',
     contractor: 'Орындаушы:',
@@ -169,10 +187,12 @@ const translations = {
 const subtotalOutput = document.querySelector('#subtotal');
 const discountRow = document.querySelector('#discount-row');
 const discountOutput = document.querySelector('#discount-amount');
+const discountRateOutput = document.querySelector('#discount-rate');
 const discountedRow = document.querySelector('#discounted-row');
 const discountedOutput = document.querySelector('#discounted-subtotal');
 const vatRow = document.querySelector('#vat-row');
 const vatOutput = document.querySelector('#vat-amount');
+const vatRateOutput = document.querySelector('#vat-rate');
 const grandTotalOutput = document.querySelector('#grand-total');
 
 function getSavedLanguage() {
@@ -268,11 +288,15 @@ function calculate() {
   let rawSubtotal = 0;
 
   itemsBody.querySelectorAll('.item-row').forEach((row) => {
+    const name = row.querySelector('.item-name').value.trim();
     const quantity = numberOrZero(row.querySelector('.item-quantity').value);
     const price = numberOrZero(row.querySelector('.item-price').value);
     const lineTotal = quantity * price;
 
     rawSubtotal += lineTotal;
+    row.querySelector('.print-item-name').textContent = name || t('unnamed');
+    row.querySelector('.print-item-quantity').textContent = quantity.toLocaleString(getLocale());
+    row.querySelector('.print-item-price').textContent = formatMoney(price);
     row.querySelector('.item-total').textContent = formatMoney(lineTotal);
   });
 
@@ -286,8 +310,10 @@ function calculate() {
 
   subtotalOutput.textContent = formatMoney(subtotal);
   discountOutput.textContent = formatMoney(discountAmount);
+  discountRateOutput.textContent = `(${discountPercent.toLocaleString(getLocale())}%)`;
   discountedOutput.textContent = formatMoney(discountedSubtotal);
   vatOutput.textContent = formatMoney(vatAmount);
+  vatRateOutput.textContent = `(${vatPercent.toLocaleString(getLocale())}%)`;
   grandTotalOutput.textContent = formatMoney(grandTotal);
 
   const hasDiscount = discountAmount !== 0;
@@ -303,8 +329,10 @@ function createEstimateId() {
 }
 
 function updatePrintDetails() {
+  printCompany.textContent = companyInput.value.trim() || '—';
   printEstimateTitle.textContent = estimateTitleInput.value.trim();
-  printCustomer.textContent = customerInput.value.trim() || '_______________________________________________';
+  printCustomer.textContent = customerInput.value.trim() || '—';
+  printContractor.textContent = contractorInput.value.trim() || '—';
 }
 
 function loadHistory() {
@@ -341,7 +369,9 @@ function persistHistory() {
 function hasMeaningfulContent(draft) {
   return Boolean(
     draft.title.trim()
+    || draft.company.trim()
     || draft.customer.trim()
+    || draft.contractor.trim()
     || draft.comment.trim()
     || numberOrZero(draft.discount)
     || numberOrZero(draft.vat)
@@ -353,8 +383,10 @@ function getDraft() {
   const totals = calculate();
   return {
     id: currentEstimateId,
+    company: companyInput.value,
     title: estimateTitleInput.value,
     customer: customerInput.value,
+    contractor: contractorInput.value,
     number: estimateNumber.textContent,
     date: estimateDate.textContent,
     items: [...itemsBody.querySelectorAll('.item-row')].map((row) => ({
@@ -409,8 +441,10 @@ function saveDraft(markAsChanged = true) {
 function applyEstimateState(savedEstimate) {
   currentEstimateId = savedEstimate.id || createEstimateId();
   excludeCurrentFromHistory = Boolean(savedEstimate.historyExcluded);
+  companyInput.value = savedEstimate.company ?? '';
   estimateTitleInput.value = savedEstimate.title ?? '';
   customerInput.value = savedEstimate.customer ?? '';
+  contractorInput.value = savedEstimate.contractor ?? '';
   setDocumentDetails({
     number: savedEstimate.number || getTodayDetails().number,
     date: savedEstimate.date || getTodayDetails().date
@@ -533,8 +567,10 @@ function openStoredEstimate(estimateId) {
 function clearEditor(details) {
   currentEstimateId = createEstimateId();
   excludeCurrentFromHistory = false;
+  companyInput.value = '';
   estimateTitleInput.value = '';
   customerInput.value = '';
+  contractorInput.value = '';
   itemsBody.replaceChildren();
   discountInput.value = 0;
   vatInput.value = 0;
@@ -620,12 +656,13 @@ commentInput.addEventListener('input', () => {
   resizeComment();
   saveDraft();
 });
-[estimateTitleInput, customerInput].forEach((input) => {
+[companyInput, estimateTitleInput, customerInput, contractorInput].forEach((input) => {
   input.addEventListener('input', saveDraft);
 });
 printButton.addEventListener('click', () => {
   calculate();
   resizeComment();
+  updatePrintDetails();
   window.print();
 });
 

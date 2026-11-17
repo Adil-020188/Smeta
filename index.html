@@ -30,15 +30,43 @@
 
     <section class="card" aria-labelledby="items-heading">
       <header class="print-header" aria-hidden="true">
-        <h1><span data-i18n="estimate">Смета</span> № <span id="estimate-number"></span> <span data-i18n="from">от</span> <span id="estimate-date"></span></h1>
-        <p class="print-estimate-title" id="print-estimate-title"></p>
-        <div class="print-requisites">
-          <p><strong data-i18n="contractor">Исполнитель:</strong> ______________________________________________</p>
-          <p><strong data-i18n="customer">Заказчик:</strong> <span id="print-customer">_______________________________________________</span></p>
+        <div class="print-topline">
+          <div class="print-company-block">
+            <p class="print-label" data-i18n="company">Компания</p>
+            <h1 id="print-company">—</h1>
+          </div>
+          <dl class="print-document-meta">
+            <div>
+              <dt data-i18n="estimateNumber">Номер сметы</dt>
+              <dd>№ <span id="estimate-number"></span></dd>
+            </div>
+            <div>
+              <dt data-i18n="date">Дата</dt>
+              <dd id="estimate-date"></dd>
+            </div>
+          </dl>
+        </div>
+        <div class="print-document-title">
+          <p data-i18n="estimate">Смета</p>
+          <h2 class="print-estimate-title" id="print-estimate-title"></h2>
+        </div>
+        <div class="print-parties">
+          <div>
+            <span data-i18n="customer">Заказчик:</span>
+            <strong id="print-customer">—</strong>
+          </div>
+          <div>
+            <span data-i18n="contractor">Исполнитель:</span>
+            <strong id="print-contractor">—</strong>
+          </div>
         </div>
       </header>
 
       <div class="estimate-meta">
+        <label>
+          <span data-i18n="companyName">Название компании</span>
+          <input id="company-name" type="text" placeholder="Например, ТОО «Компания»" data-i18n-placeholder="companyPlaceholder">
+        </label>
         <label>
           <span data-i18n="estimateName">Название сметы</span>
           <input id="estimate-title" type="text" placeholder="Например, ремонт офиса" data-i18n-placeholder="estimateNamePlaceholder">
@@ -46,6 +74,10 @@
         <label>
           <span data-i18n="customerData">Данные заказчика</span>
           <input id="customer-name" type="text" placeholder="Имя или название компании" data-i18n-placeholder="customerPlaceholder">
+        </label>
+        <label>
+          <span data-i18n="contractorData">Данные исполнителя</span>
+          <input id="contractor-name" type="text" placeholder="Имя или название исполнителя" data-i18n-placeholder="contractorPlaceholder">
         </label>
       </div>
 
@@ -108,7 +140,7 @@
             <dd id="subtotal">0 ₸</dd>
           </div>
           <div class="summary-row" id="discount-row" hidden>
-            <dt data-i18n="discount">Скидка</dt>
+            <dt><span data-i18n="discount">Скидка</span> <span class="summary-rate" id="discount-rate"></span></dt>
             <dd id="discount-amount">0 ₸</dd>
           </div>
           <div class="summary-row" id="discounted-row" hidden>
@@ -116,7 +148,7 @@
             <dd id="discounted-subtotal">0 ₸</dd>
           </div>
           <div class="summary-row" id="vat-row" hidden>
-            <dt data-i18n="vat">НДС</dt>
+            <dt><span data-i18n="vat">НДС</span> <span class="summary-rate" id="vat-rate"></span></dt>
             <dd id="vat-amount">0 ₸</dd>
           </div>
           <div class="summary-row summary-total">
@@ -169,18 +201,21 @@
           <span class="visually-hidden" data-i18n="itemName">Наименование позиции</span>
           <input class="item-name" type="text" placeholder="Например, офисное кресло" data-i18n-placeholder="itemPlaceholder">
         </label>
+        <span class="print-item-value print-item-name"></span>
       </td>
       <td data-label="Количество" data-i18n-data-label="quantity">
         <label>
           <span class="visually-hidden" data-i18n="quantity">Количество</span>
           <input class="item-quantity" type="number" min="0" step="any" value="1" inputmode="decimal">
         </label>
+        <span class="print-item-value print-item-quantity"></span>
       </td>
       <td data-label="Цена" data-i18n-data-label="price">
         <label>
           <span class="visually-hidden" data-i18n="price">Цена</span>
           <input class="item-price" type="number" min="0" step="any" value="0" inputmode="decimal">
         </label>
+        <span class="print-item-value print-item-price"></span>
       </td>
       <td class="item-total" data-label="Сумма" data-i18n-data-label="amount">0 ₸</td>
       <td class="row-action" data-label="">
