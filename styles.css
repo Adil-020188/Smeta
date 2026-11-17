@@ -223,6 +223,11 @@ h3 {
   font-weight: 750;
 }
 
+.required-field > span:first-child::after {
+  content: " *";
+  color: #c43d4b;
+}
+
 .section-heading {
   display: flex;
   align-items: center;
@@ -390,6 +395,14 @@ textarea:focus {
   border-color: #6d89df;
   outline: 0;
   box-shadow: 0 0 0 4px rgb(49 87 213 / 12%);
+}
+
+input.is-invalid,
+select.is-invalid,
+textarea.is-invalid {
+  border-color: #d34b59;
+  background: #fffafb;
+  box-shadow: 0 0 0 3px rgb(196 61 75 / 10%);
 }
 
 button:focus-visible {
@@ -568,6 +581,31 @@ textarea::placeholder {
   display: block;
   min-height: 110px;
   resize: vertical;
+}
+
+.validation-message {
+  margin-top: 18px;
+  padding: 13px 15px;
+  border: 1px solid #efc2c8;
+  border-radius: 12px;
+  color: #8f2935;
+  background: #fff5f6;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.validation-message[hidden] {
+  display: none;
+}
+
+.validation-message strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.validation-message ul {
+  margin: 0;
+  padding-left: 20px;
 }
 
 .document-actions {
@@ -977,6 +1015,7 @@ textarea::placeholder {
   .adjustments,
   .document-actions,
   .manual-copy,
+  .validation-message,
   .pdf-hint,
   .row-action,
   thead th:last-child,

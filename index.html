@@ -63,21 +63,21 @@
       </header>
 
       <div class="estimate-meta">
-        <label>
+        <label class="required-field">
           <span data-i18n="companyName">Название компании</span>
-          <input id="company-name" type="text" placeholder="Например, ТОО «Компания»" data-i18n-placeholder="companyPlaceholder">
+          <input id="company-name" type="text" placeholder="Например, ТОО «Компания»" data-i18n-placeholder="companyPlaceholder" required>
         </label>
-        <label>
+        <label class="required-field">
           <span data-i18n="estimateName">Название сметы</span>
-          <input id="estimate-title" type="text" placeholder="Например, ремонт офиса" data-i18n-placeholder="estimateNamePlaceholder">
+          <input id="estimate-title" type="text" placeholder="Например, ремонт офиса" data-i18n-placeholder="estimateNamePlaceholder" required>
         </label>
-        <label>
+        <label class="required-field">
           <span data-i18n="customerData">Данные заказчика</span>
-          <input id="customer-name" type="text" placeholder="Имя или название компании" data-i18n-placeholder="customerPlaceholder">
+          <input id="customer-name" type="text" placeholder="Имя или название компании" data-i18n-placeholder="customerPlaceholder" required>
         </label>
-        <label>
+        <label class="required-field">
           <span data-i18n="contractorData">Данные исполнителя</span>
-          <input id="contractor-name" type="text" placeholder="Имя или название исполнителя" data-i18n-placeholder="contractorPlaceholder">
+          <input id="contractor-name" type="text" placeholder="Имя или название исполнителя" data-i18n-placeholder="contractorPlaceholder" required>
         </label>
       </div>
 
@@ -113,11 +113,11 @@
           </div>
           <label>
             <span data-i18n="discountPercent">Скидка, %</span>
-            <input id="discount" type="number" min="0" step="any" value="0" inputmode="decimal">
+            <input id="discount" type="number" min="0" max="100" step="any" value="0" inputmode="decimal">
           </label>
           <label>
             <span data-i18n="vatPercent">НДС, %</span>
-            <input id="vat" type="number" min="0" step="any" value="0" inputmode="decimal">
+            <input id="vat" type="number" min="0" max="100" step="any" value="0" inputmode="decimal">
           </label>
           <label>
             <span data-i18n="currency">Валюта</span>
@@ -163,6 +163,8 @@
         <textarea id="comment" rows="4" placeholder="Например: срок выполнения — 5 рабочих дней, предоплата — 50 %" data-i18n-placeholder="commentPlaceholder"></textarea>
       </div>
 
+      <div class="validation-message" id="validation-message" role="alert" hidden></div>
+
       <div class="document-actions">
         <button class="button button-primary" id="print-estimate" type="button"><span aria-hidden="true">↓</span> <span data-i18n="savePdf">Сохранить PDF</span></button>
         <button class="button button-secondary" id="copy-whatsapp" type="button"><span aria-hidden="true">⧉</span> <span data-i18n="copyWhatsApp">Скопировать для WhatsApp</span></button>
@@ -197,23 +199,23 @@
   <template id="item-row-template">
     <tr class="item-row">
       <td data-label="Наименование" data-i18n-data-label="name">
-        <label>
+        <label class="required-field">
           <span class="visually-hidden" data-i18n="itemName">Наименование позиции</span>
-          <input class="item-name" type="text" placeholder="Например, офисное кресло" data-i18n-placeholder="itemPlaceholder">
+          <input class="item-name" type="text" placeholder="Например, офисное кресло" data-i18n-placeholder="itemPlaceholder" required>
         </label>
         <span class="print-item-value print-item-name"></span>
       </td>
       <td data-label="Количество" data-i18n-data-label="quantity">
-        <label>
+        <label class="required-field">
           <span class="visually-hidden" data-i18n="quantity">Количество</span>
-          <input class="item-quantity" type="number" min="0" step="any" value="1" inputmode="decimal">
+          <input class="item-quantity" type="number" min="0.01" step="any" value="1" inputmode="decimal" required>
         </label>
         <span class="print-item-value print-item-quantity"></span>
       </td>
       <td data-label="Цена" data-i18n-data-label="price">
-        <label>
+        <label class="required-field">
           <span class="visually-hidden" data-i18n="price">Цена</span>
-          <input class="item-price" type="number" min="0" step="any" value="0" inputmode="decimal">
+          <input class="item-price" type="number" min="0" step="any" value="0" inputmode="decimal" required>
         </label>
         <span class="print-item-value print-item-price"></span>
       </td>

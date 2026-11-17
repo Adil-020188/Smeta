@@ -24,6 +24,7 @@ const printContractor = document.querySelector('#print-contractor');
 const historyList = document.querySelector('#history-list');
 const historyEmpty = document.querySelector('#history-empty');
 const clearHistoryButton = document.querySelector('#clear-history');
+const validationMessage = document.querySelector('#validation-message');
 const languageButtons = [...document.querySelectorAll('.language-button')];
 
 const storageKey = 'estimate-draft-v1';
@@ -107,7 +108,21 @@ const translations = {
     historyItems: 'поз.',
     noCustomer: 'Заказчик не указан',
     confirmDelete: 'Удалить смету',
-    confirmClearHistory: 'Удалить всю историю смет? Это действие нельзя отменить.'
+    confirmClearHistory: 'Удалить всю историю смет? Это действие нельзя отменить.',
+    validationHeading: 'Проверьте введённые данные',
+    companyRequired: 'Укажите название компании.',
+    estimateNameRequired: 'Укажите название сметы.',
+    customerRequired: 'Укажите данные заказчика.',
+    contractorRequired: 'Укажите данные исполнителя.',
+    position: 'Позиция',
+    itemNameRequired: 'укажите наименование.',
+    quantityRequired: 'количество должно быть больше нуля.',
+    priceRequired: 'укажите корректную цену.',
+    discountRange: 'Скидка должна быть от 0 до 100 %.',
+    vatRange: 'НДС должен быть от 0 до 100 %.',
+    negativeQuantityAdjusted: 'Отрицательное количество заменено на ноль.',
+    negativePriceAdjusted: 'Отрицательная цена заменена на ноль.',
+    percentAdjusted: 'Значение скидки или НДС ограничено диапазоном от 0 до 100 %.'
   },
   kk: {
     documentTitle: '5 минутта смета',
@@ -180,7 +195,21 @@ const translations = {
     historyItems: 'позиция',
     noCustomer: 'Тапсырыс беруші көрсетілмеген',
     confirmDelete: 'Сметаны жою',
-    confirmClearHistory: 'Сметалар тарихын толығымен жою керек пе? Бұл әрекетті болдырмау мүмкін емес.'
+    confirmClearHistory: 'Сметалар тарихын толығымен жою керек пе? Бұл әрекетті болдырмау мүмкін емес.',
+    validationHeading: 'Енгізілген деректерді тексеріңіз',
+    companyRequired: 'Компания атауын көрсетіңіз.',
+    estimateNameRequired: 'Смета атауын көрсетіңіз.',
+    customerRequired: 'Тапсырыс беруші туралы мәліметті көрсетіңіз.',
+    contractorRequired: 'Орындаушы туралы мәліметті көрсетіңіз.',
+    position: 'Позиция',
+    itemNameRequired: 'атауын көрсетіңіз.',
+    quantityRequired: 'саны нөлден үлкен болуы керек.',
+    priceRequired: 'дұрыс бағаны көрсетіңіз.',
+    discountRange: 'Жеңілдік 0-ден 100 %-ға дейін болуы керек.',
+    vatRange: 'ҚҚС 0-ден 100 %-ға дейін болуы керек.',
+    negativeQuantityAdjusted: 'Теріс сан нөлге ауыстырылды.',
+    negativePriceAdjusted: 'Теріс баға нөлге ауыстырылды.',
+    percentAdjusted: 'Жеңілдік немесе ҚҚС мәні 0-ден 100 %-ға дейін шектелді.'
   }
 };
 
@@ -227,6 +256,7 @@ function translateRoot(root) {
 }
 
 function applyLanguage(language, shouldSave = true) {
+  const hadValidationWarning = !validationMessage.hidden;
   currentLanguage = language === 'kk' ? 'kk' : 'ru';
   document.documentElement.lang = currentLanguage;
   document.title = t('documentTitle');
@@ -241,6 +271,7 @@ function applyLanguage(language, shouldSave = true) {
   calculate();
   updatePrintDetails();
   renderHistory();
+  if (hadValidationWarning) validateEstimate(false);
   if (!manualCopy.hidden) manualCopyText.value = getEstimateText();
 
   if (shouldSave) {
@@ -255,6 +286,154 @@ function applyLanguage(language, shouldSave = true) {
 function numberOrZero(value) {
   const number = Number.parseFloat(value);
   return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function percentageOrZero(value) {
+  return Math.min(numberOrZero(value), 100);
+}
+
+function getValidationFields() {
+  return [
+    companyInput,
+    estimateTitleInput,
+    customerInput,
+    contractorInput,
+    discountInput,
+    vatInput,
+    ...itemsBody.querySelectorAll('.item-name, .item-quantity, .item-price')
+  ];
+}
+
+function getPositionNumber(input) {
+  const row = input.closest('.item-row');
+  return [...itemsBody.querySelectorAll('.item-row')].indexOf(row) + 1;
+}
+
+function getFieldIssue(input) {
+  const value = input.value.trim();
+  if (input === companyInput && !value) return t('companyRequired');
+  if (input === estimateTitleInput && !value) return t('estimateNameRequired');
+  if (input === customerInput && !value) return t('customerRequired');
+  if (input === contractorInput && !value) return t('contractorRequired');
+
+  if (input.classList.contains('item-name') && !value) {
+    return `${t('position')} ${getPositionNumber(input)}: ${t('itemNameRequired')}`;
+  }
+  if (input.classList.contains('item-quantity')) {
+    const quantity = Number(value);
+    if (!value || !Number.isFinite(quantity) || quantity <= 0) {
+      return `${t('position')} ${getPositionNumber(input)}: ${t('quantityRequired')}`;
+    }
+  }
+  if (input.classList.contains('item-price')) {
+    const price = Number(value);
+    if (!value || !Number.isFinite(price) || price < 0) {
+      return `${t('position')} ${getPositionNumber(input)}: ${t('priceRequired')}`;
+    }
+  }
+  if (input === discountInput && value) {
+    const discount = Number(value);
+    if (!Number.isFinite(discount) || discount < 0 || discount > 100) return t('discountRange');
+  }
+  if (input === vatInput && value) {
+    const vat = Number(value);
+    if (!Number.isFinite(vat) || vat < 0 || vat > 100) return t('vatRange');
+  }
+  return '';
+}
+
+function setFieldValidation(input, issue) {
+  input.classList.toggle('is-invalid', Boolean(issue));
+  input.setAttribute('aria-invalid', String(Boolean(issue)));
+  input.setCustomValidity(issue);
+  return issue;
+}
+
+function validateField(input) {
+  return setFieldValidation(input, getFieldIssue(input));
+}
+
+function showValidationMessages(issues) {
+  validationMessage.replaceChildren();
+  if (!issues.length) {
+    validationMessage.hidden = true;
+    return;
+  }
+
+  const heading = document.createElement('strong');
+  heading.textContent = t('validationHeading');
+  validationMessage.append(heading);
+
+  const list = document.createElement('ul');
+  [...new Set(issues)].forEach((issue) => {
+    const item = document.createElement('li');
+    item.textContent = issue;
+    list.append(item);
+  });
+  validationMessage.append(list);
+  validationMessage.hidden = false;
+}
+
+function validateEstimate(shouldFocus = true) {
+  const invalidFields = [];
+  const issues = [];
+  getValidationFields().forEach((input) => {
+    const issue = validateField(input);
+    if (issue) {
+      invalidFields.push(input);
+      issues.push(issue);
+    }
+  });
+  showValidationMessages(issues);
+  if (shouldFocus && invalidFields.length) invalidFields[0].focus();
+  return invalidFields.length === 0;
+}
+
+function clearValidationState() {
+  getValidationFields().forEach((input) => {
+    input.classList.remove('is-invalid');
+    input.setAttribute('aria-invalid', 'false');
+    input.setCustomValidity('');
+  });
+  showValidationMessages([]);
+}
+
+function normalizeNumberInput(input) {
+  if (!input.value.trim()) return '';
+  const value = Number(input.value);
+  if (!Number.isFinite(value)) return '';
+
+  if (input.classList.contains('item-quantity') && value < 0) {
+    input.value = '0';
+    return t('negativeQuantityAdjusted');
+  }
+  if (input.classList.contains('item-price') && value < 0) {
+    input.value = '0';
+    return t('negativePriceAdjusted');
+  }
+  if ((input === discountInput || input === vatInput) && (value < 0 || value > 100)) {
+    input.value = String(Math.min(Math.max(value, 0), 100));
+    return t('percentAdjusted');
+  }
+  return '';
+}
+
+function handleNumberInput(input) {
+  const adjustmentMessage = normalizeNumberInput(input);
+  const issue = validateField(input);
+  if (adjustmentMessage) {
+    showValidationMessages([adjustmentMessage]);
+  } else if (issue) {
+    showValidationMessages([issue]);
+  } else if (!document.querySelector('.is-invalid')) {
+    showValidationMessages([]);
+  }
+}
+
+function blockInvalidNumberCharacter(event) {
+  if (!event.ctrlKey && !event.metaKey && !event.altKey && ['-', '+', 'e', 'E'].includes(event.key)) {
+    event.preventDefault();
+  }
 }
 
 function formatMoney(value) {
@@ -301,8 +480,8 @@ function calculate() {
   });
 
   const subtotal = Math.round(rawSubtotal);
-  const discountPercent = numberOrZero(discountInput.value);
-  const vatPercent = numberOrZero(vatInput.value);
+  const discountPercent = percentageOrZero(discountInput.value);
+  const vatPercent = percentageOrZero(vatInput.value);
   const discountAmount = Math.round(subtotal * discountPercent / 100);
   const discountedSubtotal = subtotal - discountAmount;
   const vatAmount = Math.round(discountedSubtotal * vatPercent / 100);
@@ -460,9 +639,13 @@ function applyEstimateState(savedEstimate) {
   itemsBody.replaceChildren();
   savedEstimate.items.forEach((item) => addRow(item || {}, false));
   if (!savedEstimate.items.length) addRow({}, false);
+  [discountInput, vatInput, ...itemsBody.querySelectorAll('.item-quantity, .item-price')].forEach((input) => {
+    normalizeNumberInput(input);
+  });
   calculate();
   resizeComment();
   updatePrintDetails();
+  clearValidationState();
 }
 
 function loadDraft() {
@@ -558,8 +741,7 @@ function openStoredEstimate(estimateId) {
 
   applyEstimateState(savedEstimate);
   excludeCurrentFromHistory = false;
-  saveCurrentDraftOnly(getDraft());
-  renderHistory();
+  saveDraft(false);
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   document.querySelector('.card').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
 }
@@ -583,6 +765,7 @@ function clearEditor(details) {
   calculate();
   resizeComment();
   updatePrintDetails();
+  clearValidationState();
 }
 
 function deleteStoredEstimate(estimateId) {
@@ -631,6 +814,12 @@ addRowButton.addEventListener('click', () => {
   row.querySelector('.item-name').focus();
 });
 
+itemsBody.addEventListener('keydown', (event) => {
+  if (event.target.matches('.item-quantity, .item-price')) blockInvalidNumberCharacter(event);
+});
+itemsBody.addEventListener('input', (event) => {
+  if (event.target.matches('.item-quantity, .item-price')) handleNumberInput(event.target);
+});
 itemsBody.addEventListener('input', calculate);
 itemsBody.addEventListener('input', saveDraft);
 
@@ -642,9 +831,12 @@ itemsBody.addEventListener('click', (event) => {
   if (!itemsBody.querySelector('.item-row')) addRow();
   calculate();
   saveDraft();
+  if (!validationMessage.hidden) validateEstimate(false);
 });
 
 [discountInput, vatInput].forEach((input) => {
+  input.addEventListener('keydown', blockInvalidNumberCharacter);
+  input.addEventListener('input', () => handleNumberInput(input));
   input.addEventListener('input', calculate);
   input.addEventListener('input', saveDraft);
 });
@@ -659,7 +851,21 @@ commentInput.addEventListener('input', () => {
 [companyInput, estimateTitleInput, customerInput, contractorInput].forEach((input) => {
   input.addEventListener('input', saveDraft);
 });
+document.querySelector('.card').addEventListener('input', (event) => {
+  if (event.target.matches('input[type="text"]') && event.target.classList.contains('is-invalid')) {
+    const issue = validateField(event.target);
+    if (issue) showValidationMessages([issue]);
+    else if (!document.querySelector('.is-invalid')) showValidationMessages([]);
+  }
+});
+document.querySelector('.card').addEventListener('focusout', (event) => {
+  if (!getValidationFields().includes(event.target)) return;
+  const issue = validateField(event.target);
+  if (issue) showValidationMessages([issue]);
+  else if (!document.querySelector('.is-invalid')) showValidationMessages([]);
+});
 printButton.addEventListener('click', () => {
+  if (!validateEstimate()) return;
   calculate();
   resizeComment();
   updatePrintDetails();
@@ -698,8 +904,8 @@ function getEstimateText() {
     lines.push(`• ${name} — ${quantity.toLocaleString(getLocale())} ${t('unit')} × ${formatMoney(price)} = ${formatMoney(quantity * price)}`);
   });
 
-  const discountPercent = numberOrZero(discountInput.value);
-  const vatPercent = numberOrZero(vatInput.value);
+  const discountPercent = percentageOrZero(discountInput.value);
+  const vatPercent = percentageOrZero(vatInput.value);
   if (discountPercent > 0) lines.push(`${t('discount')} ${discountPercent.toLocaleString(getLocale())}%: −${discountOutput.textContent}`);
   if (vatPercent > 0) lines.push(`${t('vat')} ${vatPercent.toLocaleString(getLocale())}%: ${vatOutput.textContent}`);
   lines.push('', `${t('totalDue')}: ${grandTotalOutput.textContent}`);
@@ -716,6 +922,7 @@ function showCopiedStatus() {
 }
 
 async function copyForWhatsApp() {
+  if (!validateEstimate()) return;
   const text = getEstimateText();
   manualCopy.hidden = true;
 
