@@ -13,12 +13,23 @@ const manualCopy = document.querySelector('#manual-copy');
 const manualCopyText = document.querySelector('#manual-copy-text');
 const estimateNumber = document.querySelector('#estimate-number');
 const estimateDate = document.querySelector('#estimate-date');
+const estimateTitleInput = document.querySelector('#estimate-title');
+const customerInput = document.querySelector('#customer-name');
+const printEstimateTitle = document.querySelector('#print-estimate-title');
+const printCustomer = document.querySelector('#print-customer');
+const historyList = document.querySelector('#history-list');
+const historyEmpty = document.querySelector('#history-empty');
+const clearHistoryButton = document.querySelector('#clear-history');
 const languageButtons = [...document.querySelectorAll('.language-button')];
 
 const storageKey = 'estimate-draft-v1';
 const languageStorageKey = 'estimate-language';
+const historyStorageKey = 'estimate-history-v1';
 let copyStatusTimer;
 let currentLanguage = getSavedLanguage();
+let currentEstimateId = '';
+let estimateHistory = [];
+let excludeCurrentFromHistory = false;
 
 const translations = {
   ru: {
@@ -28,6 +39,10 @@ const translations = {
     pageTitle: 'Смета за 5 минут',
     intro: 'Составьте аккуратную смету, рассчитайте итог и отправьте клиенту — всё в одном окне.',
     autosave: 'Черновик сохраняется автоматически',
+    estimateName: 'Название сметы',
+    estimateNamePlaceholder: 'Например, ремонт офиса',
+    customerData: 'Данные заказчика',
+    customerPlaceholder: 'Имя или название компании',
     estimate: 'Смета',
     from: 'от',
     contractor: 'Исполнитель:',
@@ -69,7 +84,19 @@ const translations = {
     confirmNew: 'Очистить текущую смету и создать новую?',
     unnamed: 'Без наименования',
     unit: 'шт',
-    copied: 'Скопировано ✓'
+    copied: 'Скопировано ✓',
+    savedEstimates: 'Сохранённые сметы',
+    estimateHistory: 'История смет',
+    historyDescription: 'Откройте любую смету, чтобы посмотреть или продолжить редактирование.',
+    clearHistory: 'Очистить историю',
+    historyEmpty: 'Сохранённых смет пока нет.',
+    currentEstimate: 'Открыта сейчас',
+    openEstimate: 'Открыть',
+    deleteEstimate: 'Удалить',
+    historyItems: 'поз.',
+    noCustomer: 'Заказчик не указан',
+    confirmDelete: 'Удалить смету',
+    confirmClearHistory: 'Удалить всю историю смет? Это действие нельзя отменить.'
   },
   kk: {
     documentTitle: '5 минутта смета',
@@ -78,6 +105,10 @@ const translations = {
     pageTitle: '5 минутта смета',
     intro: 'Ұқыпты смета жасаңыз, қорытындыны есептеп, клиентке жіберіңіз — бәрі бір терезеде.',
     autosave: 'Нобай автоматты түрде сақталады',
+    estimateName: 'Смета атауы',
+    estimateNamePlaceholder: 'Мысалы, кеңсені жөндеу',
+    customerData: 'Тапсырыс беруші туралы мәлімет',
+    customerPlaceholder: 'Аты немесе компания атауы',
     estimate: 'Смета',
     from: 'күні',
     contractor: 'Орындаушы:',
@@ -119,7 +150,19 @@ const translations = {
     confirmNew: 'Ағымдағы сметаны тазалап, жаңасын жасау керек пе?',
     unnamed: 'Атаусыз',
     unit: 'дана',
-    copied: 'Көшірілді ✓'
+    copied: 'Көшірілді ✓',
+    savedEstimates: 'Сақталған сметалар',
+    estimateHistory: 'Сметалар тарихы',
+    historyDescription: 'Көру немесе өңдеуді жалғастыру үшін кез келген сметаны ашыңыз.',
+    clearHistory: 'Тарихты тазарту',
+    historyEmpty: 'Сақталған сметалар әзірге жоқ.',
+    currentEstimate: 'Қазір ашық',
+    openEstimate: 'Ашу',
+    deleteEstimate: 'Жою',
+    historyItems: 'позиция',
+    noCustomer: 'Тапсырыс беруші көрсетілмеген',
+    confirmDelete: 'Сметаны жою',
+    confirmClearHistory: 'Сметалар тарихын толығымен жою керек пе? Бұл әрекетті болдырмау мүмкін емес.'
   }
 };
 
@@ -176,6 +219,8 @@ function applyLanguage(language, shouldSave = true) {
 
   if (copyStatus.textContent) copyStatus.textContent = t('copied');
   calculate();
+  updatePrintDetails();
+  renderHistory();
   if (!manualCopy.hidden) manualCopyText.value = getEstimateText();
 
   if (shouldSave) {
@@ -249,10 +294,67 @@ function calculate() {
   discountRow.hidden = !hasDiscount;
   discountedRow.hidden = !hasDiscount;
   vatRow.hidden = vatAmount === 0;
+
+  return { subtotal, discountAmount, discountedSubtotal, vatAmount, grandTotal };
+}
+
+function createEstimateId() {
+  return `estimate-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function updatePrintDetails() {
+  printEstimateTitle.textContent = estimateTitleInput.value.trim();
+  printCustomer.textContent = customerInput.value.trim() || '_______________________________________________';
+}
+
+function loadHistory() {
+  try {
+    const savedHistory = JSON.parse(localStorage.getItem(historyStorageKey));
+    if (!Array.isArray(savedHistory)) return [];
+    const usedIds = new Set();
+    return savedHistory
+      .filter((estimate) => estimate && typeof estimate === 'object' && Array.isArray(estimate.items))
+      .map((estimate) => {
+        let id = typeof estimate.id === 'string' && estimate.id ? estimate.id : createEstimateId();
+        if (usedIds.has(id)) id = createEstimateId();
+        usedIds.add(id);
+        return {
+          ...estimate,
+          id,
+          items: estimate.items.filter((item) => item && typeof item === 'object'),
+          grandTotal: Number.isFinite(Number(estimate.grandTotal)) ? Number(estimate.grandTotal) : 0
+        };
+      });
+  } catch (error) {
+    return [];
+  }
+}
+
+function persistHistory() {
+  try {
+    localStorage.setItem(historyStorageKey, JSON.stringify(estimateHistory));
+  } catch (error) {
+    // Текущий черновик продолжает работать, даже если история недоступна.
+  }
+}
+
+function hasMeaningfulContent(draft) {
+  return Boolean(
+    draft.title.trim()
+    || draft.customer.trim()
+    || draft.comment.trim()
+    || numberOrZero(draft.discount)
+    || numberOrZero(draft.vat)
+    || draft.items.some((item) => item.name.trim() || numberOrZero(item.price))
+  );
 }
 
 function getDraft() {
+  const totals = calculate();
   return {
+    id: currentEstimateId,
+    title: estimateTitleInput.value,
+    customer: customerInput.value,
     number: estimateNumber.textContent,
     date: estimateDate.textContent,
     items: [...itemsBody.querySelectorAll('.item-row')].map((row) => ({
@@ -263,41 +365,215 @@ function getDraft() {
     discount: discountInput.value,
     vat: vatInput.value,
     currency: currencySelect.value,
-    comment: commentInput.value
+    comment: commentInput.value,
+    grandTotal: totals.grandTotal,
+    historyExcluded: excludeCurrentFromHistory
   };
 }
 
-function saveDraft() {
+function saveCurrentDraftOnly(draft = getDraft()) {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(getDraft()));
+    localStorage.setItem(storageKey, JSON.stringify(draft));
   } catch (error) {
     // Расчёты продолжают работать, даже если хранилище браузера недоступно.
   }
+}
+
+function upsertHistory(draft) {
+  if (draft.historyExcluded) return;
+  const existingIndex = estimateHistory.findIndex((estimate) => estimate.id === draft.id);
+  if (existingIndex < 0 && !hasMeaningfulContent(draft)) return;
+
+  const historyEntry = {
+    ...draft,
+    updatedAt: new Date().toISOString()
+  };
+
+  if (existingIndex >= 0) {
+    estimateHistory[existingIndex] = historyEntry;
+  } else {
+    estimateHistory.push(historyEntry);
+  }
+  persistHistory();
+  renderHistory();
+}
+
+function saveDraft(markAsChanged = true) {
+  if (markAsChanged) excludeCurrentFromHistory = false;
+  updatePrintDetails();
+  const draft = getDraft();
+  saveCurrentDraftOnly(draft);
+  upsertHistory(draft);
+}
+
+function applyEstimateState(savedEstimate) {
+  currentEstimateId = savedEstimate.id || createEstimateId();
+  excludeCurrentFromHistory = Boolean(savedEstimate.historyExcluded);
+  estimateTitleInput.value = savedEstimate.title ?? '';
+  customerInput.value = savedEstimate.customer ?? '';
+  setDocumentDetails({
+    number: savedEstimate.number || getTodayDetails().number,
+    date: savedEstimate.date || getTodayDetails().date
+  });
+  discountInput.value = savedEstimate.discount ?? 0;
+  vatInput.value = savedEstimate.vat ?? 0;
+  if ([...currencySelect.options].some((option) => option.value === savedEstimate.currency)) {
+    currencySelect.value = savedEstimate.currency;
+  } else {
+    currencySelect.selectedIndex = 0;
+  }
+  commentInput.value = savedEstimate.comment ?? '';
+  itemsBody.replaceChildren();
+  savedEstimate.items.forEach((item) => addRow(item || {}, false));
+  if (!savedEstimate.items.length) addRow({}, false);
+  calculate();
+  resizeComment();
+  updatePrintDetails();
 }
 
 function loadDraft() {
   try {
     const savedDraft = JSON.parse(localStorage.getItem(storageKey));
     if (!savedDraft || !Array.isArray(savedDraft.items)) return false;
-
-    setDocumentDetails({
-      number: savedDraft.number || getTodayDetails().number,
-      date: savedDraft.date || getTodayDetails().date
-    });
-    discountInput.value = savedDraft.discount ?? 0;
-    vatInput.value = savedDraft.vat ?? 0;
-    if ([...currencySelect.options].some((option) => option.value === savedDraft.currency)) {
-      currencySelect.value = savedDraft.currency;
-    }
-    commentInput.value = savedDraft.comment ?? '';
-    savedDraft.items.forEach((item) => addRow(item, false));
-    if (!savedDraft.items.length) addRow({}, false);
-    calculate();
-    resizeComment();
+    applyEstimateState(savedDraft);
     return true;
   } catch (error) {
     return false;
   }
+}
+
+function getHistoryTitle(estimate) {
+  return String(estimate.title || '').trim() || `${t('estimate')} № ${estimate.number || ''}`.trim();
+}
+
+function formatStoredMoney(value, currency) {
+  const safeValue = Number.isFinite(Number(value)) ? Math.round(Number(value)) : 0;
+  return `${safeValue.toLocaleString(getLocale())} ${currency || '₸'}`;
+}
+
+function renderHistory() {
+  if (!historyList || !historyEmpty) return;
+
+  historyList.replaceChildren();
+  const sortedHistory = [...estimateHistory].sort((first, second) => {
+    return String(second.updatedAt || '').localeCompare(String(first.updatedAt || ''));
+  });
+
+  sortedHistory.forEach((estimate) => {
+    const item = document.createElement('article');
+    item.className = 'history-item';
+    if (estimate.id === currentEstimateId) item.classList.add('is-current');
+
+    const content = document.createElement('div');
+    const titleRow = document.createElement('div');
+    titleRow.className = 'history-title-row';
+
+    const title = document.createElement('h3');
+    title.textContent = getHistoryTitle(estimate);
+    titleRow.append(title);
+
+    if (estimate.id === currentEstimateId) {
+      const currentBadge = document.createElement('span');
+      currentBadge.className = 'history-current-badge';
+      currentBadge.textContent = t('currentEstimate');
+      titleRow.append(currentBadge);
+    }
+
+    const meta = document.createElement('p');
+    meta.className = 'history-meta';
+    meta.textContent = `№ ${estimate.number || '—'} · ${estimate.date || '—'} · ${String(estimate.customer || '').trim() || t('noCustomer')}`;
+
+    const stats = document.createElement('p');
+    stats.className = 'history-stats';
+    const itemCount = estimate.items.filter((position) => {
+      return position && (String(position.name || '').trim() || numberOrZero(position.price));
+    }).length;
+    stats.textContent = `${itemCount} ${t('historyItems')} · ${formatStoredMoney(estimate.grandTotal, estimate.currency)}`;
+
+    content.append(titleRow, meta, stats);
+
+    const actions = document.createElement('div');
+    actions.className = 'history-actions';
+
+    const openButton = document.createElement('button');
+    openButton.className = 'button button-secondary';
+    openButton.type = 'button';
+    openButton.dataset.historyAction = 'open';
+    openButton.dataset.estimateId = estimate.id;
+    openButton.textContent = t('openEstimate');
+
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'button button-secondary history-delete';
+    deleteButton.type = 'button';
+    deleteButton.dataset.historyAction = 'delete';
+    deleteButton.dataset.estimateId = estimate.id;
+    deleteButton.textContent = t('deleteEstimate');
+
+    actions.append(openButton, deleteButton);
+    item.append(content, actions);
+    historyList.append(item);
+  });
+
+  historyEmpty.hidden = sortedHistory.length > 0;
+  clearHistoryButton.disabled = sortedHistory.length === 0;
+}
+
+function openStoredEstimate(estimateId) {
+  const savedEstimate = estimateHistory.find((estimate) => estimate.id === estimateId);
+  if (!savedEstimate) return;
+
+  applyEstimateState(savedEstimate);
+  excludeCurrentFromHistory = false;
+  saveCurrentDraftOnly(getDraft());
+  renderHistory();
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelector('.card').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+}
+
+function clearEditor(details) {
+  currentEstimateId = createEstimateId();
+  excludeCurrentFromHistory = false;
+  estimateTitleInput.value = '';
+  customerInput.value = '';
+  itemsBody.replaceChildren();
+  discountInput.value = 0;
+  vatInput.value = 0;
+  currencySelect.selectedIndex = 0;
+  commentInput.value = '';
+  manualCopy.hidden = true;
+  copyStatus.textContent = '';
+  setDocumentDetails(details);
+  addRow({}, false);
+  calculate();
+  resizeComment();
+  updatePrintDetails();
+}
+
+function deleteStoredEstimate(estimateId) {
+  const savedEstimate = estimateHistory.find((estimate) => estimate.id === estimateId);
+  if (!savedEstimate) return;
+  if (!window.confirm(`${t('confirmDelete')} «${getHistoryTitle(savedEstimate)}»?`)) return;
+
+  estimateHistory = estimateHistory.filter((estimate) => estimate.id !== estimateId);
+  persistHistory();
+
+  if (estimateId === currentEstimateId) {
+    clearEditor(getNextEstimateDetails());
+    saveDraft(false);
+  } else {
+    renderHistory();
+  }
+}
+
+function clearEstimateHistory() {
+  if (!estimateHistory.length || !window.confirm(t('confirmClearHistory'))) return;
+
+  estimateHistory = [];
+  currentEstimateId = createEstimateId();
+  excludeCurrentFromHistory = true;
+  persistHistory();
+  saveCurrentDraftOnly(getDraft());
+  renderHistory();
 }
 
 function addRow({ name = '', quantity = 1, price = 0 } = {}, shouldSave = true) {
@@ -344,6 +620,9 @@ commentInput.addEventListener('input', () => {
   resizeComment();
   saveDraft();
 });
+[estimateTitleInput, customerInput].forEach((input) => {
+  input.addEventListener('input', saveDraft);
+});
 printButton.addEventListener('click', () => {
   calculate();
   resizeComment();
@@ -366,19 +645,9 @@ function resetEstimate() {
   if (!window.confirm(t('confirmNew'))) return;
 
   const nextDetails = getNextEstimateDetails();
-  itemsBody.replaceChildren();
-  discountInput.value = 0;
-  vatInput.value = 0;
-  currencySelect.selectedIndex = 0;
-  commentInput.value = '';
-  manualCopy.hidden = true;
-  copyStatus.textContent = '';
-  setDocumentDetails(nextDetails);
-  addRow({}, false);
-  calculate();
-  resizeComment();
-  saveDraft();
-  itemsBody.querySelector('.item-name').focus();
+  clearEditor(nextDetails);
+  saveDraft(false);
+  estimateTitleInput.focus();
 }
 
 function getEstimateText() {
@@ -431,11 +700,26 @@ newEstimateButton.addEventListener('click', resetEstimate);
 languageButtons.forEach((button) => {
   button.addEventListener('click', () => applyLanguage(button.dataset.language));
 });
+historyList.addEventListener('click', (event) => {
+  const actionButton = event.target.closest('[data-history-action]');
+  if (!actionButton) return;
 
+  if (actionButton.dataset.historyAction === 'open') {
+    openStoredEstimate(actionButton.dataset.estimateId);
+  }
+  if (actionButton.dataset.historyAction === 'delete') {
+    deleteStoredEstimate(actionButton.dataset.estimateId);
+  }
+});
+clearHistoryButton.addEventListener('click', clearEstimateHistory);
+
+estimateHistory = loadHistory();
+currentEstimateId = createEstimateId();
 if (!loadDraft()) {
   setDocumentDetails();
   addRow({}, false);
-  saveDraft();
+  saveDraft(false);
 }
 
 applyLanguage(currentLanguage, false);
+saveDraft(false);

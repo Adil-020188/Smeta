@@ -203,6 +203,25 @@ h3 {
   box-shadow: 0 22px 60px rgb(29 44 75 / 10%);
 }
 
+.estimate-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f9fbfd;
+}
+
+.estimate-meta label > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #3c485d;
+  font-size: 13px;
+  font-weight: 750;
+}
+
 .section-heading {
   display: flex;
   align-items: center;
@@ -243,6 +262,13 @@ h3 {
 
 .button:active {
   transform: translateY(0);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+  box-shadow: none;
 }
 
 .button-secondary {
@@ -590,6 +616,128 @@ textarea::placeholder {
   font-size: 12px;
 }
 
+.history-card {
+  margin-top: 24px;
+  padding: 30px 36px;
+  border: 1px solid rgb(214 223 235 / 88%);
+  border-radius: 24px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 18px 45px rgb(29 44 75 / 8%);
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.history-header h2 {
+  margin-bottom: 6px;
+}
+
+.history-list {
+  display: grid;
+  gap: 12px;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #fbfcfe;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.history-item:hover {
+  border-color: #c6d2e5;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgb(29 44 75 / 7%);
+}
+
+.history-item.is-current {
+  border-color: #aebee3;
+  background: #f8faff;
+}
+
+.history-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.history-title-row h3 {
+  margin: 0;
+  color: #202b40;
+  font-size: 17px;
+}
+
+.history-current-badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #23534e;
+  background: #dff5f1;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.history-meta,
+.history-stats {
+  margin: 6px 0 0;
+  color: #728096;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.history-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 16px;
+  color: #4c5a70;
+  font-weight: 650;
+}
+
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-actions .button {
+  min-height: 44px;
+}
+
+.history-delete {
+  border-color: #ecd3d6;
+  color: #ae3846;
+  background: #fffafb;
+}
+
+.history-delete:hover {
+  border-color: #e4b9bf;
+  background: #fff2f3;
+  box-shadow: none;
+}
+
+.history-empty {
+  margin: 0;
+  padding: 30px 16px;
+  border: 1px dashed #ccd6e3;
+  border-radius: 14px;
+  color: #7a8596;
+  text-align: center;
+}
+
+.history-empty[hidden] {
+  display: none;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -655,6 +803,12 @@ textarea::placeholder {
   .card {
     padding: 20px;
     border-radius: 19px;
+  }
+
+  .estimate-meta {
+    grid-template-columns: 1fr;
+    margin-bottom: 26px;
+    padding: 17px;
   }
 
   .section-heading {
@@ -745,6 +899,33 @@ textarea::placeholder {
     margin: 0;
     text-align: center;
   }
+
+  .history-card {
+    margin-top: 16px;
+    padding: 20px;
+    border-radius: 19px;
+  }
+
+  .history-header,
+  .history-item,
+  .history-actions {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .history-header {
+    display: flex;
+  }
+
+  .history-header .button,
+  .history-actions .button {
+    width: 100%;
+  }
+
+  .history-actions {
+    display: flex;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -781,6 +962,8 @@ textarea::placeholder {
 
   .page-header,
   .language-switcher,
+  .estimate-meta,
+  .history-card,
   .section-heading,
   .adjustments,
   .document-actions,
@@ -818,6 +1001,17 @@ textarea::placeholder {
     font-size: 18pt;
     line-height: 1.2;
     text-align: center;
+  }
+
+  .print-estimate-title {
+    margin: -3mm 0 6mm;
+    font-size: 12pt;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .print-estimate-title:empty {
+    display: none;
   }
 
   .print-requisites {

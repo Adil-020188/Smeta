@@ -31,11 +31,23 @@
     <section class="card" aria-labelledby="items-heading">
       <header class="print-header" aria-hidden="true">
         <h1><span data-i18n="estimate">Смета</span> № <span id="estimate-number"></span> <span data-i18n="from">от</span> <span id="estimate-date"></span></h1>
+        <p class="print-estimate-title" id="print-estimate-title"></p>
         <div class="print-requisites">
           <p><strong data-i18n="contractor">Исполнитель:</strong> ______________________________________________</p>
-          <p><strong data-i18n="customer">Заказчик:</strong> _________________________________________________</p>
+          <p><strong data-i18n="customer">Заказчик:</strong> <span id="print-customer">_______________________________________________</span></p>
         </div>
       </header>
+
+      <div class="estimate-meta">
+        <label>
+          <span data-i18n="estimateName">Название сметы</span>
+          <input id="estimate-title" type="text" placeholder="Например, ремонт офиса" data-i18n-placeholder="estimateNamePlaceholder">
+        </label>
+        <label>
+          <span data-i18n="customerData">Данные заказчика</span>
+          <input id="customer-name" type="text" placeholder="Имя или название компании" data-i18n-placeholder="customerPlaceholder">
+        </label>
+      </div>
 
       <div class="section-heading">
         <div>
@@ -134,6 +146,19 @@
       <p class="pdf-hint" data-i18n="pdfHint">В окне печати выберите «Сохранить как PDF».</p>
 
       <p class="print-signature" aria-hidden="true"><span data-i18n="signature">Подпись</span> ____________________</p>
+    </section>
+
+    <section class="history-card" aria-labelledby="history-heading">
+      <div class="history-header">
+        <div>
+          <p class="section-kicker" data-i18n="savedEstimates">Сохранённые сметы</p>
+          <h2 id="history-heading" data-i18n="estimateHistory">История смет</h2>
+          <p class="section-description" data-i18n="historyDescription">Откройте любую смету, чтобы посмотреть или продолжить редактирование.</p>
+        </div>
+        <button class="button button-secondary button-danger" id="clear-history" type="button" data-i18n="clearHistory">Очистить историю</button>
+      </div>
+      <div class="history-list" id="history-list" aria-live="polite"></div>
+      <p class="history-empty" id="history-empty" data-i18n="historyEmpty">Сохранённых смет пока нет.</p>
     </section>
   </main>
 
