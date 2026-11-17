@@ -46,9 +46,49 @@ button {
 }
 
 .page {
+  position: relative;
   width: min(1160px, calc(100% - 40px));
   margin: 0 auto;
   padding: 52px 0 64px;
+}
+
+.language-switcher {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid #d9e1ec;
+  border-radius: 13px;
+  background: rgb(255 255 255 / 86%);
+  box-shadow: 0 8px 24px rgb(23 32 51 / 7%);
+  backdrop-filter: blur(8px);
+}
+
+.language-button {
+  min-width: 52px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  color: #68748a;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 750;
+  transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.language-button:hover {
+  color: var(--primary-dark);
+  background: var(--primary-soft);
+}
+
+.language-button[aria-pressed="true"] {
+  color: #ffffff;
+  background: var(--primary);
+  box-shadow: 0 5px 12px rgb(49 87 213 / 22%);
 }
 
 .page-header {
@@ -485,7 +525,7 @@ textarea::placeholder {
   font-weight: 750;
 }
 
-.comment-block label span {
+.comment-block label > span:last-child {
   margin-left: 5px;
   color: #8a95a6;
   font-size: 12px;
@@ -586,7 +626,12 @@ textarea::placeholder {
 
   .page-header {
     margin-bottom: 20px;
-    padding: 0 4px;
+    padding: 48px 4px 0;
+  }
+
+  .language-switcher {
+    top: 0;
+    right: 4px;
   }
 
   .brand-line {
@@ -735,6 +780,7 @@ textarea::placeholder {
   }
 
   .page-header,
+  .language-switcher,
   .section-heading,
   .adjustments,
   .document-actions,
