@@ -80,6 +80,7 @@ const translations = {
     discountedAmount: 'Сумма со скидкой',
     vat: 'НДС',
     totalDue: 'Итого к оплате',
+    amountInWords: 'Сумма прописью',
     comment: 'Комментарий',
     optional: 'необязательно',
     commentPlaceholder: 'Например: срок выполнения — 5 рабочих дней, предоплата — 50 %',
@@ -167,6 +168,7 @@ const translations = {
     discountedAmount: 'Жеңілдіктен кейінгі сома',
     vat: 'ҚҚС',
     totalDue: 'Төлеуге барлығы',
+    amountInWords: 'Сома жазбаша',
     comment: 'Түсініктеме',
     optional: 'міндетті емес',
     commentPlaceholder: 'Мысалы: орындау мерзімі — 5 жұмыс күні, алдын ала төлем — 50 %',
@@ -223,6 +225,15 @@ const vatRow = document.querySelector('#vat-row');
 const vatOutput = document.querySelector('#vat-amount');
 const vatRateOutput = document.querySelector('#vat-rate');
 const grandTotalOutput = document.querySelector('#grand-total');
+const amountInWordsRow = document.querySelector('#amount-in-words-row');
+const amountInWordsOutput = document.querySelector('#amount-in-words');
+
+const maximumAmountInWords = 999999999;
+const unitsMale = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+const unitsFemale = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
 
 function getSavedLanguage() {
   try {
@@ -441,6 +452,60 @@ function formatMoney(value) {
   return `${safeValue.toLocaleString(getLocale())} ${currencySelect.value}`;
 }
 
+function getPluralFormIndex(value) {
+  const lastTwoDigits = value % 100;
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return 2;
+
+  const lastDigit = value % 10;
+  if (lastDigit === 1) return 0;
+  if (lastDigit >= 2 && lastDigit <= 4) return 1;
+  return 2;
+}
+
+function tripletToWords(value, feminine = false) {
+  const words = [];
+  const hundredsDigit = Math.floor(value / 100);
+  const lastTwoDigits = value % 100;
+
+  if (hundredsDigit) words.push(hundreds[hundredsDigit]);
+
+  if (lastTwoDigits >= 10 && lastTwoDigits <= 19) {
+    words.push(teens[lastTwoDigits - 10]);
+  } else {
+    const tensDigit = Math.floor(lastTwoDigits / 10);
+    const unitsDigit = lastTwoDigits % 10;
+    if (tensDigit) words.push(tens[tensDigit]);
+    if (unitsDigit) words.push((feminine ? unitsFemale : unitsMale)[unitsDigit]);
+  }
+
+  return words;
+}
+
+function amountToRussianWords(value) {
+  const safeValue = Number.isFinite(value) ? Math.round(value) : 0;
+  if (safeValue <= 0 || safeValue > maximumAmountInWords) return '';
+
+  const words = [];
+  const millions = Math.floor(safeValue / 1000000);
+  const thousands = Math.floor(safeValue / 1000) % 1000;
+  const remainder = safeValue % 1000;
+
+  if (millions) {
+    words.push(...tripletToWords(millions));
+    words.push(['миллион', 'миллиона', 'миллионов'][getPluralFormIndex(millions)]);
+  }
+
+  if (thousands) {
+    words.push(...tripletToWords(thousands, true));
+    words.push(['тысяча', 'тысячи', 'тысяч'][getPluralFormIndex(thousands)]);
+  }
+
+  if (remainder) words.push(...tripletToWords(remainder));
+
+  const result = `${words.join(' ')} тенге`;
+  return result.charAt(0).toUpperCase() + result.slice(1);
+}
+
 function getTodayDetails(sequence = 1) {
   const today = new Date();
   const year = today.getFullYear();
@@ -494,6 +559,10 @@ function calculate() {
   vatOutput.textContent = formatMoney(vatAmount);
   vatRateOutput.textContent = `(${vatPercent.toLocaleString(getLocale())}%)`;
   grandTotalOutput.textContent = formatMoney(grandTotal);
+
+  const amountInWords = currencySelect.value === '₸' ? amountToRussianWords(grandTotal) : '';
+  amountInWordsOutput.textContent = amountInWords;
+  amountInWordsRow.hidden = !amountInWords;
 
   const hasDiscount = discountAmount !== 0;
   discountRow.hidden = !hasDiscount;
@@ -909,6 +978,7 @@ function getEstimateText() {
   if (discountPercent > 0) lines.push(`${t('discount')} ${discountPercent.toLocaleString(getLocale())}%: −${discountOutput.textContent}`);
   if (vatPercent > 0) lines.push(`${t('vat')} ${vatPercent.toLocaleString(getLocale())}%: ${vatOutput.textContent}`);
   lines.push('', `${t('totalDue')}: ${grandTotalOutput.textContent}`);
+  if (!amountInWordsRow.hidden) lines.push(`${t('amountInWords')}: ${amountInWordsOutput.textContent}`);
 
   return lines.join('\n');
 }

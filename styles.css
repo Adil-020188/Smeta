@@ -556,6 +556,29 @@ textarea::placeholder {
   letter-spacing: -0.025em;
 }
 
+.summary-words {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  color: #dce5f7;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.summary-words[hidden] {
+  display: none;
+}
+
+.summary-words dt,
+.summary-words dd {
+  display: inline;
+  margin: 0;
+}
+
+.summary-words dt {
+  font-weight: 750;
+}
+
 .comment-block {
   margin-top: 25px;
   padding-top: 25px;
@@ -1285,7 +1308,7 @@ textarea::placeholder {
   }
 
   .summary-total {
-    margin: 2mm -4mm -3mm;
+    margin: 2mm -4mm 0;
     padding: 3mm 4mm;
     border-top: 0;
     color: #ffffff;
@@ -1296,6 +1319,15 @@ textarea::placeholder {
   .summary-total dt,
   .summary-total dd {
     color: #ffffff;
+  }
+
+  .summary-words {
+    margin: 0 -4mm -3mm;
+    padding: 2.5mm 4mm 3mm;
+    border-top: 0;
+    color: #17233b;
+    background: #f7f9fc;
+    font-size: 9pt;
   }
 
   .comment-block {
